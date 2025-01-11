@@ -1,0 +1,18 @@
+server:
+  http:
+    addr: 0.0.0.0:8000
+mysql:
+  path: 127.0.0.1:3306
+  config: charset=utf8mb4&parseTime=True&loc=Local
+  db-name: knowledges
+  username: root
+  password: 123456
+  max-idle-conns: 5
+  max-open-conns: 30
+  conn-max-lifetime: 420
+
+emailConfig:
+  sender: xxxx
+  authCode: xxx
+  smtp: smtp.qq.com
+  smtpCode: 587

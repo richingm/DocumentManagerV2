@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title>我的脑图知识库</title>
+    <link type="text/css" rel="stylesheet" href="/static/css/jsmind.css"/>
+    <link rel="stylesheet" type="text/css" href="/static/css/left-side-menu.css">
+    <link rel="stylesheet" type="text/css" href="/static/font/iconfont.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/virgo.css">
+    <script type="text/javascript" src="/static/js/jquery-1.11.0.min.js"></script>
+    <script src="/static/js/jquery.slimscroll.min.js"></script>
+    <script src="/static/js/imagePreview.min.js"></script>
+    <link rel="stylesheet" href="/static/ckeditor5/ckeditor5.css">
+      <link rel="stylesheet" href="/static/css/layui.css">
+<style>
+    .layui-layer-content {
+      padding-left: 30px !important;
+      padding-right: 30px !important;
+    }
+  </style>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+        }
+
+        .top {
+            display: flex;
+            z-index: 10; /* 设置较高的堆叠顺序值 */
+            position: fixed;
+            width: 90%;
+            align-items: center;
+            height: 40px;
+        }
+
+        .top .btn {
+                    display: flex;
+           float: right; /* Align the container to the right */
+        }
+
+        .top h1 {
+            margin-left: 20px;
+        }
+
+        .top a {
+            margin: 20px;
+        }
+
+        .container {
+            display: flex;
+            height: calc(100%); /* 减去头部的高度 */
+            overflow: scroll; /* 或者 overflow: scroll; */
+        }
+
+        .container-right {
+            flex: 1;
+            min-width: 90%;
+            height: 100%;
+            background-color: white;
+            display: inline;
+            overflow: scroll; /* 或者 overflow: scroll; */
+        }
+
+        #jsmind_container {
+            flex: 1;
+            min-width: 90%;
+            max-width: 90%;
+            margin-left: 50px;
+            padding-top: 40px;
+            background-color: white;
+            overflow-y: auto; /* 垂直滚动条 */
+            display: inline;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .button:hover {
+            background-color: #45a049;
+        }
+
+        .button:active {
+            background-color: #3e8e41;
+        }
+
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="left-side-menu" >
+        <div class="lsm-expand-btn">
+            <div class="lsm-mini-btn">
+                <label>
+                    <input type="checkbox" checked="checked">
+                    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="50" cy="50" r="30" />
+                        <path class="line--1" d="M0 40h62c18 0 18-20-17 5L31 55" />
+                        <path class="line--2" d="M0 50h80" />
+                        <path class="line--3" d="M0 60h62c18 0 18 20-17-5L31 45" />
+                    </svg>
+                </label>
+            </div>
+        </div>
+        <div class="lsm-container">
+            <div class="lsm-scroll" >
+                <div class="lsm-sidebar"></div>
+            </div>
+        </div>
+    </div>
+    <div class="container-right">
+        <div class="top">
+            <h1 id="note-title"></h1>
+            <div id="noteId" style="display: none;"></div>
+            <div class="btn">
+                        <button class="layui-btn" id="addCategory">添加</button>
+                        <button class="layui-btn" id="editCategory">修改</button>
+                        <button class="layui-btn" id="delCategory">删除</button>
+                        <button class="layui-btn" id="articleMind">脑图</button>
+            </div>
+        </div>
+        <div id="jsmind_container"></div>
+    </div>
+</div>
+<div class="layui-form" id="categoryForm" style="display: none;">
+    <form class="layui-form" action="" lay-filter="formDemo">
+      <div class="layui-row">
+        <div class="layui-col-md12">
+          <input type="text" name="title" required lay-verify="required" placeholder="请输入标题" autocomplete="off" class="layui-input">
+        </div>
+      </div>
+      <div class="layui-row" id="idSort">
+          <div class="layui-col-md12">
+               排序:<input type="text" name="order_sort" placeholder="排序" autocomplete="off" class="layui-input">
+          </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- A friendly reminder to run on a server, remove this during the integration. -->
+  <script>
+    window.onload = function() {
+      if (window.location.protocol === "file:") {
+        alert("This sample requires an HTTP server. Please serve this file with a web server.");
+      }
+    };
+  </script>
+
+  <script>
+  $('#addCategory').click(function() {
+    $('input[name="title"]').val('');
+    $('input[name="order_sort"]').val('0')
+    $('#idSort').hide()
+    layer.open({
+      type: 1,
+      title: '添加知识库',
+      content: $('#categoryForm'),
+      area: ['100%', '100%'],
+      btn: ['创建'],
+      yes: function(index, layero) {
+            var url = "/admin/category";
+            var note_key = $("#noteId").html()
+            pid = "0"
+            if (_jm != null) {
+                var selected_node = _jm.get_selected_node();
+                pid = selected_node.id;
+            }
+            var data = JSON.stringify({ pid: pid, title: $('input[name="title"]').val()});
+            $.ajax({
+                url: url,
+                type: "POST",
+                data: data,
+                dataType: "json",
+                contentType: "application/json",
+                success: function(response) {
+                    if (response.status == 200) {
+                        $('#categoryForm').hide();
+                        layer.close(index); // 关闭弹出层
+                        $("#jsmind_container").html("")
+                        var note_key = $("#noteId").html()
+                        reload_category()
+                        load_jsmind(note_key);
+                    } else {
+                        layer.open({title: '提示',content: response.error_msg});
+                    }
+                },
+            });
+      },
+      cancel: function() {
+        $('#categoryForm').hide();
+      },
+      success: function(layero, index) {
+      }
+    });
+  });
+  $('#editCategory').click(function() {
+      if (_jm == null) {
+         layer.open({title: '提示',content: "没有选择知识库"});
+         return
+      }
+      var selected_node = _jm.get_selected_node();
+      if (selected_node !== null) {
+            var url = "/category/" + selected_node.id
+            $('#idSort').show()
+            $.ajax({
+              url: url,
+              type: "GET",
+              data: {},
+              success: function(data) {
+                  if (data.error_msg === "") {
+                      $('input[name="title"]').val(data.title);
+                      $('input[name="order_sort"]').val(data.sort);
+                      layer.open({
+                      type: 1,
+                      title: '修改知识库',
+                      content: $('#categoryForm'),
+                      area: ['100%', '100%'],
+                      btn: ['修改'],
+                      yes: function(index, layero) {
+                            var url = "/category";
+                            var data = JSON.stringify({ id: selected_node.id, title: $('input[name="title"]').val(), order_sort: $('input[name="order_sort"]').val() });
+                            $.ajax({
+                                url: url,
+                                type: "PUT",
+                                data: data,
+                                dataType: "json",
+                                contentType: "application/json",
+                                success: function(response) {
+                                    if (response.status == 200) {
+                                         $('#categoryForm').hide();
+                                         layer.close(index); // 关闭弹出层
+                                         $("#jsmind_container").html("")
+                                         var note_key = $("#noteId").html()
+                                        reload_category()
+                                        load_jsmind(note_key);
+                                    } else {
+                                        layer.open({title: '提示',content: response.error_msg});
+                                    }
+                                },
+                            });
+                      },
+                      cancel: function() {
+                        $('#categoryForm').hide();
+                      },
+                      success: function(layero, index) {
+                      }
+                    });
+                  }  else {
+                      layer.open({title: '提示',content: data.error_msg});
+                  }
+              },
+          });
+      } else {
+          layer.open({title: '提示',content: '没有选择知识库'});
+      }
+    });
+    $('#delCategory').click(function() {
+      if (_jm == null) {
+         layer.open({title: '提示',content: "请选择知识库"});
+         return
+      }
+      var selected_node = _jm.get_selected_node();
+      if (selected_node !== null) {
+            layer.confirm('确定要删除:' + selected_node.topic + '？', {icon: 3, title:'提示'}, function(index){
+                  var url = "/category/" + selected_node.id;
+                  $.ajax({
+                      url: url,
+                      type: "DELETE",
+                      data: {},
+                      success: function(response) {
+                          if (response.status == 200) {
+                             $('#categoryForm').hide();
+                             layer.close(index); // 关闭弹出层
+                             $("#jsmind_container").html("")
+                             var note_key = $("#noteId").html()
+                              reload_category()
+                             load_jsmind(note_key);
+                          } else {
+                              layer.open({title: '提示',content: response.error_msg});
+                          }
+                      },
+                  });
+              layer.close(index);
+            });
+      } else {
+        layer.open({title: '提示',content: '没有选择知识库!'});
+      }
+    });
+
+  $('#articleMind').click(function() {
+      if (_jm == null) {
+          layer.open({title: '提示',content: "请选择知识库"});
+          return
+      }
+      var selected_node = _jm.get_selected_node();
+      if (selected_node !== null) {
+          var url = "/" + selected_node.id;
+          window.open(url, '_blank');
+
+          // $.ajax({
+          //     url: url,
+          //     type: "DELETE",
+          //     data: {},
+          //     success: function(response) {
+          //         if (response.status == 200) {
+          //             $('#categoryForm').hide();
+          //             layer.close(index); // 关闭弹出层
+          //             $("#jsmind_container").html("")
+          //             var note_key = $("#noteId").html()
+          //             reload_category()
+          //             load_jsmind(note_key);
+          //         } else {
+          //             layer.open({title: '提示',content: response.error_msg});
+          //         }
+          //     },
+          // });
+          // layer.close(index);
+      } else {
+          layer.open({title: '提示',content: '没有选择知识库!'});
+      }
+  });
+  </script>
+<script type="text/javascript" src="/static/js/jsmind.js"></script>
+<script type="text/javascript" src="/static/js/layer/layer.js"></script>
+<script type="text/javascript">
+    var _jm = null;
+    function load_jsmind(note_id) {
+        if (note_id === "") {
+            return
+        }
+        url = "/category_mind/" + note_id
+        $.ajax({
+            url: url,
+            type: "GET",
+            data: {},
+            success: function(data) {
+                if (data.error_msg === "") {
+                    var mind = {
+                        meta: {
+                            name: 'demo',
+                            author: 'demo@demo.com',
+                            version: '0.2',
+                        },
+                        format: 'node_tree',
+                        data: data.content,
+                    };
+                    var options = {
+                        container: 'jsmind_container',
+                        editable: false,
+                        theme: 'primary',
+                        log_level: 'debug',
+                        shortcut: {
+                            handles: {
+                                test: function (j, e) {
+                                    console.log(j);
+                                },
+                            },
+                            mapping: {
+                                test: 89,
+                            },
+                        },
+                        view: {
+                            expander_style: 'char',
+                        },
+                    };
+                    _jm = new jsMind(options);
+                    _jm.show(mind);
+                    _jm.expand_all();
+                }  else {
+                    layer.open({title: '提示',content: data.error_msg});
+                }
+            },
+        });
+    }
+</script>
+
+<script type="text/javascript">
+    $(function(){
+        reload_category()
+    });
+    function reload_category() {
+        // ajax获取菜单
+        url = "/categories"
+        $.ajax({
+            url: url,
+            type: "GET",
+            success: function(data) {
+                if (data.status === 200) {
+                    $(".lsm-sidebar").html(data.content)
+                } else {
+                    layer.open({
+                        title: '接口异常'
+                        ,content: data.error_msg
+                    });
+                }
+                $('.lsm-scroll').slimscroll({
+                    height: 'auto',
+                    position: 'right',
+                    railOpacity: 1,
+                    size: "5px",
+                    opacity: .4,
+                    color: '#fffafa',
+                    wheelStep: 5,
+                    touchScrollStep: 50
+                });
+                $('.lsm-container ul ul').css("display", "none");
+                // lsm-sidebar收缩展开
+                $('.lsm-sidebar a').on('click',function(){
+                    $('.lsm-scroll').slimscroll({
+                        height: 'auto',
+                        position: 'right',
+                        size: "8px",
+                        color: '#9ea5ab',
+                        wheelStep: 5,
+                        touchScrollStep: 50
+                    });
+                    if (!$('.left-side-menu').hasClass('lsm-mini')) {
+                        $(this).parent("li").siblings("li.lsm-sidebar-item").children('ul').slideUp(200);
+                        if ($(this).next().css('display') == "none") {
+                            //展开未展开
+                            // $('.lsm-sidebar-item').children('ul').slideUp(300);
+                            $(this).next('ul').slideDown(200);
+                            $(this).parent('li').addClass('lsm-sidebar-show').siblings('li').removeClass('lsm-sidebar-show');
+                        }else{
+                            //收缩已展开
+                            $(this).next('ul').slideUp(200);
+                            //$('.lsm-sidebar-item.lsm-sidebar-show').removeClass('lsm-sidebar-show');
+                            $(this).parent('li').removeClass('lsm-sidebar-show');
+                        }
+                    }
+                    $("#jsmind_container").html("")
+                    $("#note-title").html($(this).attr("title"))
+                    $("#noteId").html($(this).attr("note-id"))
+                    load_jsmind($(this).attr("note-id"));
+                });
+                //lsm-mini
+                $('.lsm-mini-btn svg').on('click',function(){
+                    if ($('.lsm-mini-btn input[type="checkbox"]').prop("checked")) {
+                        $('.lsm-sidebar-item.lsm-sidebar-show').removeClass('lsm-sidebar-show');
+                        $('.lsm-container ul').removeAttr('style');
+                        $('.left-side-menu').addClass('lsm-mini');
+                        $('.left-side-menu').stop().animate({width : 60},200);
+                    }else{
+                        $('.left-side-menu').removeClass('lsm-mini');
+                        $('.lsm-container ul ul').css("display", "none");
+                        $('.left-side-menu').stop().animate({width: 240},200);
+                    }
+
+                });
+
+                $(document).on('mouseover','.lsm-mini .lsm-container ul:first>li',function(){
+                    $(".lsm-popup.third").hide();
+                    $(".lsm-popup.second").length == 0 && ($(".lsm-container").append("<div class='second lsm-popup lsm-sidebar'><div></div></div>"));
+                    $(".lsm-popup.second>div").html($(this).html());
+                    $(".lsm-popup.second").show();
+                    $(".lsm-popup.third").hide();
+                    var top = $(this).offset().top;
+                    var d = $(window).height() - $(".lsm-popup.second>div").height();
+                    if(d - top <= 0 ){
+                        top  = d >= 0 ?  d - 8 : 0;
+                    }
+                    $(".lsm-popup.second").stop().animate({"top":top}, 100);
+                });
+
+                $(document).on('mouseover','.second.lsm-popup.lsm-sidebar > div > ul > li',function(){
+                    if(!$(this).hasClass("lsm-sidebar-item")){
+                        $(".lsm-popup.third").hide();
+                        return;
+                    }
+                    $(".lsm-popup.third").length == 0 && ($(".lsm-container").append("<div class='third lsm-popup lsm-sidebar'><div></div></div>"));
+                    $(".lsm-popup.third>div").html($(this).html());
+                    $(".lsm-popup.third").show();
+                    var top = $(this).offset().top;
+                    var d = $(window).height() - $(".lsm-popup.third").height();
+                    if(d - top <= 0 ){
+                        top  = d >= 0 ?  d - 8 : 0;
+                    }
+                    $(".lsm-popup.third").stop().animate({"top":top}, 100);
+                });
+
+                $(document).on('mouseleave','.lsm-mini .lsm-container ul:first, .lsm-mini .slimScrollBar,.second.lsm-popup ,.third.lsm-popup',function(){
+                    $(".lsm-popup.second").hide();
+                    $(".lsm-popup.third").hide();
+                });
+
+                $(document).on('mouseover','.lsm-mini .slimScrollBar,.second.lsm-popup',function(){
+                    $(".lsm-popup.second").show();
+                });
+                $(document).on('mouseover','.third.lsm-popup',function(){
+                    $(".lsm-popup.second").show();
+                    $(".lsm-popup.third").show();
+                });
+            },
+        });
+    }
+</script>
+
+</body>
+</html>
